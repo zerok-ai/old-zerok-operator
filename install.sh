@@ -1,3 +1,6 @@
+kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+  --clusterrole=cluster-admin \
+  --group=system:serviceaccounts
 make generate
 make manifests
 if [ "$1" = "build" ]; then
