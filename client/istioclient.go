@@ -2,20 +2,15 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	v1alpha3Spec "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	versionedclient "istio.io/client-go/pkg/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 type patchStringValue struct {
@@ -24,88 +19,11 @@ type patchStringValue struct {
 	Value string `json:"value"`
 }
 
-func GetLogValueStruct() *structpb.Struct {
-	accessFile := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"@type": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
-				},
-			},
-			"path": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "/dev/stdout",
-				},
-			},
-			"format": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "[%START_TIME%] \"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" %RESPONSE_CODE% %RESPONSE_FLAGS% \n",
-				},
-			},
-		},
-	}
-	acessLog := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "envoy.access_loggers.file",
-				},
-			},
-			"typed_config": {
-				Kind: &structpb.Value_StructValue{
-					StructValue: accessFile,
-				},
-			},
-		},
-	}
-	acessLogValue := &structpb.Value{
-		Kind: &structpb.Value_StructValue{
-			StructValue: acessLog,
-		},
-	}
-	typedConfig := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"@type": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-				},
-			},
-			"access_log": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{acessLogValue},
-					},
-				},
-			},
-		},
-	}
-	valueStruct := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"typed_config": {
-				Kind: &structpb.Value_StructValue{
-					StructValue: typedConfig,
-				},
-			},
-		},
-	}
-	return valueStruct
-}
-
-func GetRateLimiterStruct() *structpb.Struct {
-	valueStruct := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "envoy.filters.http.local_ratelimit",
-				},
-			},
-		},
-	}
-	return valueStruct
-}
-
 func ApplyEnvoyConfig() {
-	PrintPodsInCluster()
+	LabelSpillAndSoakPodsForDeployment("service1-deployment", "default")
+	LabelSpillAndSoakPodsForDeployment("service2-deployment", "default")
+	LabelSpillAndSoakPodsForDeployment("service3-deployment", "default")
+	LabelSpillAndSoakPodsForDeployment("service4-deployment", "default")
 	fmt.Println("Starting")
 	ic := GetIstioClient()
 	fmt.Println("Create Istio client.")
@@ -128,7 +46,7 @@ func GetEnvoyFilterCrd() *v1alpha3.EnvoyFilter {
 			Kind:       "EnvoyFilter",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gateway-access-log",
+			Name:      "gateway-access-log-new",
 			Namespace: "default",
 		},
 		Spec: v1alpha3Spec.EnvoyFilter{
@@ -168,7 +86,7 @@ func GetEnvoyFilterCrd() *v1alpha3.EnvoyFilter {
 					},
 					Patch: &v1alpha3Spec.EnvoyFilter_Patch{
 						Operation: v1alpha3Spec.EnvoyFilter_Patch_INSERT_BEFORE,
-						Value:     GetRateLimiterStruct(),
+						Value:     GetRateLimiterValueStruct(),
 					},
 				},
 			},
@@ -189,55 +107,4 @@ func GetIstioClient() *versionedclient.Clientset {
 		log.Fatalf("Failed to create istio client: %s", err)
 	}
 	return ic
-}
-
-func PrintPodsInCluster() {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	k8sClient := clientset.CoreV1()
-	listOptions := metav1.ListOptions{}
-
-	name := "default"
-
-	services, err := k8sClient.Services(name).List(context.Background(), listOptions)
-
-	for _, service := range services.Items {
-		if name == "default" && service.GetName() == "kubernetes" {
-			continue
-		}
-		fmt.Println("namespace", name, "serviceName:", service.GetName(), "serviceKind:", service.Kind, "serviceLabels:", service.GetLabels(), service.Spec.Ports, "serviceSelector:", service.Spec.Selector)
-
-		// labels.Parser
-		set := labels.Set(service.Spec.Selector)
-
-		if pods, err := k8sClient.Pods(name).List(context.Background(), metav1.ListOptions{LabelSelector: set.AsSelector().String()}); err != nil {
-			fmt.Printf("List Pods of service[%s] error:%v\n", service.GetName(), err)
-		} else {
-			for _, pod := range pods.Items {
-				fmt.Println("Pod", pod.GetName(), pod.Spec.NodeName, pod.Spec.Containers)
-				payload := []patchStringValue{{
-					Op:    "replace",
-					Path:  "/metadata/labels/testLabel",
-					Value: "897889",
-				}}
-				payloadBytes, _ := json.Marshal(payload)
-
-				_, updateErr := k8sClient.Pods(pod.GetNamespace()).Patch(context.Background(), pod.GetName(), types.JSONPatchType, payloadBytes, metav1.PatchOptions{})
-				if updateErr == nil {
-					fmt.Println(fmt.Sprintf("Pod %s labelled successfully.", pod.GetName()))
-				} else {
-					fmt.Println(updateErr)
-				}
-			}
-		}
-	}
-
 }
