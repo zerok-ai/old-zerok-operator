@@ -1,3 +1,4 @@
+#TODO: Create a new service account and only give access to minimum needed actions on the cluster.
 kubectl create clusterrolebinding serviceaccounts-cluster-admin \
   --clusterrole=cluster-admin \
   --group=system:serviceaccounts
