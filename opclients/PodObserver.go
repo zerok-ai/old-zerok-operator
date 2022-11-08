@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 )
@@ -26,6 +27,8 @@ type PodObserver struct {
 
 func (po *PodObserver) StartObservingPods() {
 
+	fmt.Printf("Start Observing Pods for %v.\n", po.Name)
+
 	podInformer := po.informers.Core().V1().Pods()
 
 	podInformer.Informer().AddEventHandler(
@@ -35,7 +38,8 @@ func (po *PodObserver) StartObservingPods() {
 		},
 	)
 
-	po.informers.Start(po.ch)
+	po.informers.Start(wait.NeverStop)
+	po.informers.WaitForCacheSync(wait.NeverStop)
 }
 
 func (po *PodObserver) StopObservingPods() {

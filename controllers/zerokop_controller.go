@@ -62,6 +62,7 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionTimestamp())
 	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
 	r.Kclient.LabelSpillAndSoakPodsForDeployment("service1-deployment", "default")
+	r.Kclient.StartObservingPodsForDeployment("service1-deployment", "default")
 	return ctrl.Result{}, nil
 }
 

@@ -88,30 +88,60 @@ func (client *K8sClient) LabelSpillAndSoakPodsForDeployment(Name string, Namespa
 		fmt.Printf("Error while fetching podList for deployment %v.\n", Name)
 	} else {
 		LabelSpillAndSoakPods(podList)
-
-		clientSet := GetK8sClient()
-
-		labelOptions := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
-			opts.LabelSelector = GetLabelSelectorForDeployment(Name, Namespace)
-		})
-		informers := informers.NewSharedInformerFactoryWithOptions(clientSet, 10*time.Second, informers.WithNamespace(Namespace), labelOptions)
-
-		po := &PodObserver{
-			informers: informers,
-			target:    Deployment,
-			Name:      Name,
-			Namespace: Namespace,
-			client:    client,
-			ch:        make(chan struct{}),
-		}
-		deployKey := GetMapKey(Name, Namespace)
-		if client.DeploymentInformers[deployKey] != nil {
-			prevPodObserver := client.DeploymentInformers[deployKey]
-			prevPodObserver.StopObservingPods()
-		}
-		client.DeploymentInformers[deployKey] = po
-		fmt.Printf("The deploymentInformers map is %v.\n", client.DeploymentInformers)
 	}
+}
+
+func (client *K8sClient) StartObservingPodsForDeployment(Name string, Namespace string) {
+	clientSet := GetK8sClient()
+
+	labelOptions := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+		opts.LabelSelector = GetLabelSelectorForDeployment(Name, Namespace)
+	})
+	informers := informers.NewSharedInformerFactoryWithOptions(clientSet, 10*time.Second, informers.WithNamespace(Namespace), labelOptions)
+
+	po := &PodObserver{
+		informers: informers,
+		target:    Deployment,
+		Name:      Name,
+		Namespace: Namespace,
+		client:    client,
+		ch:        make(chan struct{}),
+	}
+	deployKey := GetMapKey(Name, Namespace)
+	if client.DeploymentInformers[deployKey] != nil {
+		prevPodObserver := client.DeploymentInformers[deployKey]
+		prevPodObserver.StopObservingPods()
+	}
+	client.DeploymentInformers[deployKey] = po
+	po.StartObservingPods()
+	fmt.Printf("The deploymentInformers map is %v.\n", client.DeploymentInformers)
+}
+
+func (client *K8sClient) StartObservingPodsForService(Name string, Namespace string) {
+	clientSet := GetK8sClient()
+
+	labelOptions := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+		opts.LabelSelector = GetLabelSelectorForService(Name, Namespace)
+	})
+
+	informers := informers.NewSharedInformerFactoryWithOptions(clientSet, 10*time.Second, informers.WithNamespace(Namespace), labelOptions)
+
+	po := &PodObserver{
+		informers: informers,
+		target:    Service,
+		Name:      Name,
+		Namespace: Namespace,
+		client:    client,
+		ch:        make(chan struct{}),
+	}
+	serviceKey := GetMapKey(Name, Namespace)
+	if client.DeploymentInformers[serviceKey] != nil {
+		prevPodObserver := client.ServiceInformers[serviceKey]
+		prevPodObserver.StopObservingPods()
+	}
+	client.ServiceInformers[serviceKey] = po
+	po.StartObservingPods()
+	fmt.Printf("The serviceInformers map is %v.\n", client.ServiceInformers)
 }
 
 func (client *K8sClient) LabelSpillAndSoakPodsForService(Name string, Namespace string) {
@@ -119,31 +149,7 @@ func (client *K8sClient) LabelSpillAndSoakPodsForService(Name string, Namespace 
 	if podList == nil {
 		fmt.Printf("Error while fetching podList for service %v.\n", Name)
 	} else {
-
 		LabelSpillAndSoakPods(podList)
-
-		clientSet := GetK8sClient()
-
-		labelOptions := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
-			opts.LabelSelector = GetLabelSelectorForService(Name, Namespace)
-		})
-		informers := informers.NewSharedInformerFactoryWithOptions(clientSet, 10*time.Second, informers.WithNamespace(Namespace), labelOptions)
-
-		po := &PodObserver{
-			informers: informers,
-			target:    Service,
-			Name:      Name,
-			Namespace: Namespace,
-			client:    client,
-			ch:        make(chan struct{}),
-		}
-		serviceKey := GetMapKey(Name, Namespace)
-		if client.DeploymentInformers[serviceKey] != nil {
-			prevPodObserver := client.ServiceInformers[serviceKey]
-			prevPodObserver.StopObservingPods()
-		}
-		client.ServiceInformers[serviceKey] = po
-		fmt.Printf("The serviceInformers map is %v.\n", client.ServiceInformers)
 	}
 }
 
