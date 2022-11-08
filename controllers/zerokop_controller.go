@@ -57,11 +57,11 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	_ = log.FromContext(ctx)
 
 	zerokop := &operatorv1alpha1.Zerokop{}
-	// TODO(user): your logic here
 	fmt.Printf("Test2!!! %v\n", zerokop.GetCreationTimestamp())
 	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionTimestamp())
 	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
 	r.Kclient.LabelSpillAndSoakPodsForDeployment("service1-deployment", "default")
+	opclients.ApplyEnvoyConfig()
 	r.Kclient.StartObservingPodsForDeployment("service1-deployment", "default")
 	return ctrl.Result{}, nil
 }

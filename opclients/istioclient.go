@@ -1,6 +1,8 @@
 package opclients
 
 import (
+	"context"
+	"fmt"
 	"log"
 
 	"k8s.io/client-go/rest"
@@ -17,25 +19,21 @@ type patchStringValue struct {
 	Value string `json:"value"`
 }
 
-// func ApplyEnvoyConfig() {
-// 	LabelSpillAndSoakPodsForDeployment("service1-deployment", "default")
-// 	LabelSpillAndSoakPodsForDeployment("service2-deployment", "default")
-// 	LabelSpillAndSoakPodsForDeployment("service3-deployment", "default")
-// 	LabelSpillAndSoakPodsForDeployment("service4-deployment", "default")
-// 	fmt.Println("Starting")
-// 	ic := GetIstioClient()
-// 	fmt.Println("Create Istio client.")
-// 	envoyFilterCrd := GetEnvoyFilterCrd()
-// 	fmt.Println("Create envoy filter crd")
-// 	fmt.Println("EnvoyFilterCrd is " + envoyFilterCrd.Spec.String())
-// 	_, err := ic.NetworkingV1alpha3().EnvoyFilters(envoyFilterCrd.Namespace).Create(context.Background(), envoyFilterCrd, metav1.CreateOptions{})
-// 	if err == nil {
-// 		fmt.Println("Envoy Filter applied successfully.")
-// 	} else {
-// 		fmt.Println(err)
-// 	}
-// 	fmt.Println("Applied envoy filter crd.")
-// }
+func ApplyEnvoyConfig() {
+	fmt.Println("Starting")
+	ic := GetIstioClient()
+	fmt.Println("Create Istio client.")
+	envoyFilterCrd := GetEnvoyFilterCrd()
+	fmt.Println("Create envoy filter crd")
+	fmt.Println("EnvoyFilterCrd is " + envoyFilterCrd.Spec.String())
+	_, err := ic.NetworkingV1alpha3().EnvoyFilters(envoyFilterCrd.Namespace).Create(context.Background(), envoyFilterCrd, metav1.CreateOptions{})
+	if err == nil {
+		fmt.Println("Envoy Filter applied successfully.")
+	} else {
+		fmt.Println(err)
+	}
+	fmt.Println("Applied envoy filter crd.")
+}
 
 func GetEnvoyFilterCrd() *v1alpha3.EnvoyFilter {
 	envoyFilterCrd := &v1alpha3.EnvoyFilter{
