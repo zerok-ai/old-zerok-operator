@@ -46,6 +46,12 @@ func GetEnvoyFilterCrd() *v1alpha3.EnvoyFilter {
 			Namespace: "default",
 		},
 		Spec: v1alpha3Spec.EnvoyFilter{
+			WorkloadSelector: &v1alpha3Spec.WorkloadSelector{
+				Labels: map[string]string{
+					"zk-status":     "enabled",
+					"zk-route-mark": "soak",
+				},
+			},
 			ConfigPatches: []*v1alpha3Spec.EnvoyFilter_EnvoyConfigObjectPatch{
 				{
 					ApplyTo: v1alpha3Spec.EnvoyFilter_NETWORK_FILTER,
