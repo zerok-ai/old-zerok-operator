@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/zerokdotai/zerok-operator/api/v1alpha1"
-	istioclient "github.com/zerokdotai/zerok-operator/client"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -57,10 +56,9 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	zerokop := &operatorv1alpha1.Zerokop{}
 	// TODO(user): your logic here
-	fmt.Printf("Test1!!! %v\n", zerokop.GetCreationTimestamp())
-	fmt.Printf("Test2!!! %v\n", zerokop.GetDeletionTimestamp())
-	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
-	istioclient.ApplyEnvoyConfig()
+	fmt.Printf("Test2!!! %v\n", zerokop.GetCreationTimestamp())
+	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionTimestamp())
+	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
 	return ctrl.Result{}, nil
 }
 

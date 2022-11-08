@@ -4,14 +4,45 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+type k8sClient struct {
+	deploymentInformers map[string]*PodObserver
+	serviceInformers    map[string]*PodObserver
+}
+
+func GetLabelSelectorForDeployment(Name string, Namespace string) string {
+	clientSet := GetK8sClient()
+
+	k8sClient := clientSet.AppsV1()
+
+	deployment, _ := k8sClient.Deployments(Namespace).Get(context.Background(), Name, metav1.GetOptions{})
+
+	labelSet := labels.Set(deployment.Spec.Selector.MatchLabels)
+
+	return string(labelSet.AsSelector().String())
+}
+
+func GetLabelSelectorForService(Name string, Namespace string) string {
+	k8sClient := GetK8sClient().CoreV1()
+
+	listOptions := metav1.GetOptions{}
+
+	service, _ := k8sClient.Services(Namespace).Get(context.Background(), Name, listOptions)
+
+	labelSet := labels.Set(service.Spec.Selector)
+
+	return string(labelSet.AsSelector().String())
+}
 
 func LabelSpillAndSoakPods(podList *v1.PodList) {
 	if podList == nil {
@@ -47,45 +78,88 @@ func LabelPod(pod *v1.Pod, path string, value string) {
 	}
 }
 
-func LabelSpillAndSoakPodsForDeployment(Name string, Namespace string) {
+func GetMapKey(Name string, Namespace string) string {
+	return Namespace + "," + Name
+}
+
+func (client *k8sClient) LabelSpillAndSoakPodsForDeployment(Name string, Namespace string) {
 	podList := GetPodsForDeployment(Name, Namespace)
 	if podList == nil {
 		fmt.Printf("Error while fetching podList for deployment %v.\n", Name)
 	} else {
 		LabelSpillAndSoakPods(podList)
+
+		clientSet := GetK8sClient()
+
+		labelOptions := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+			opts.LabelSelector = GetLabelSelectorForDeployment(Name, Namespace)
+		})
+		informers := informers.NewSharedInformerFactoryWithOptions(clientSet, 10*time.Second, informers.WithNamespace(Namespace), labelOptions)
+
+		po := &PodObserver{
+			informers: informers,
+			target:    Deployment,
+			Name:      Name,
+			Namespace: Namespace,
+			client:    client,
+			ch:        make(chan struct{}),
+		}
+		deployKey := GetMapKey(Name, Namespace)
+		if client.deploymentInformers[deployKey] != nil {
+			prevPodObserver := client.deploymentInformers[deployKey]
+			prevPodObserver.StopObservingPods()
+		}
+		client.deploymentInformers[deployKey] = po
 	}
 }
 
-func LabelSpillAndSoakPodsForService(Name string, Namespace string) {
+func (client *k8sClient) LabelSpillAndSoakPodsForService(Name string, Namespace string) {
 	podList := GetPodsForService(Name, Namespace)
 	if podList == nil {
 		fmt.Printf("Error while fetching podList for service %v.\n", Name)
 	} else {
+
 		LabelSpillAndSoakPods(podList)
+
+		clientSet := GetK8sClient()
+
+		labelOptions := informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+			opts.LabelSelector = GetLabelSelectorForService(Name, Namespace)
+		})
+		informers := informers.NewSharedInformerFactoryWithOptions(clientSet, 10*time.Second, informers.WithNamespace(Namespace), labelOptions)
+
+		po := &PodObserver{
+			informers: informers,
+			target:    Service,
+			Name:      Name,
+			Namespace: Namespace,
+			client:    client,
+			ch:        make(chan struct{}),
+		}
+		serviceKey := GetMapKey(Name, Namespace)
+		if client.deploymentInformers[serviceKey] != nil {
+			prevPodObserver := client.serviceInformers[serviceKey]
+			prevPodObserver.StopObservingPods()
+		}
+		client.serviceInformers[serviceKey] = po
 	}
 }
 
 func GetPodsForDeployment(Name string, Namespace string) *v1.PodList {
 	clientSet := GetK8sClient()
 
-	k8sClient := clientSet.AppsV1()
-
-	deployment, _ := k8sClient.Deployments(Namespace).Get(context.Background(), Name, metav1.GetOptions{})
-
-	labelSelector := labels.Set(deployment.Spec.Selector.MatchLabels)
-
 	options := metav1.ListOptions{
-		LabelSelector: string(labelSelector.AsSelector().String()),
+		LabelSelector: GetLabelSelectorForDeployment(Name, Namespace),
 	}
 
 	podList, err := clientSet.CoreV1().Pods(Namespace).List(context.Background(), options)
 
 	if err != nil {
-		fmt.Printf("Get Pods of deployment[%s] error:%v\n", deployment.GetName(), err)
+		fmt.Printf("Get Pods of deployment[%s] error:%v\n", Name, err)
 		return nil
 	} else {
 		for _, pod := range podList.Items {
-			fmt.Println(fmt.Sprintf("Pod found for deployment %s with name %s.", deployment.GetName(), pod.GetName()))
+			fmt.Println(fmt.Sprintf("Pod found with name %s.", pod.GetName()))
 		}
 	}
 
@@ -95,20 +169,18 @@ func GetPodsForDeployment(Name string, Namespace string) *v1.PodList {
 func GetPodsForService(Name string, Namespace string) *v1.PodList {
 	k8sClient := GetK8sClient().CoreV1()
 
-	listOptions := metav1.GetOptions{}
+	options := metav1.ListOptions{
+		LabelSelector: GetLabelSelectorForService(Name, Namespace),
+	}
 
-	service, _ := k8sClient.Services(Namespace).Get(context.Background(), Name, listOptions)
-
-	set := labels.Set(service.Spec.Selector)
-
-	pods, err := k8sClient.Pods(Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: set.AsSelector().String()})
+	pods, err := k8sClient.Pods(Namespace).List(context.Background(), options)
 
 	if err != nil {
-		fmt.Printf("Get Pods of service[%s] error:%v\n", service.GetName(), err)
+		fmt.Printf("Get Pods of service[%s] error:%v\n", Name, err)
 		return nil
 	} else {
 		for _, pod := range pods.Items {
-			fmt.Println(fmt.Sprintf("Pod found for service %s with name %s.", service.GetName(), pod.GetName()))
+			fmt.Println(fmt.Sprintf("Pod found with name %s.", pod.GetName()))
 		}
 	}
 
