@@ -15,9 +15,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type kclient struct {
-	deploymentInformers map[string]*PodObserver
-	serviceInformers    map[string]*PodObserver
+type K8sClient struct {
+	DeploymentInformers map[string]*PodObserver
+	ServiceInformers    map[string]*PodObserver
 }
 
 func GetLabelSelectorForDeployment(Name string, Namespace string) string {
@@ -82,7 +82,7 @@ func GetMapKey(Name string, Namespace string) string {
 	return Namespace + "," + Name
 }
 
-func (client *kclient) LabelSpillAndSoakPodsForDeployment(Name string, Namespace string) {
+func (client *K8sClient) LabelSpillAndSoakPodsForDeployment(Name string, Namespace string) {
 	podList := GetPodsForDeployment(Name, Namespace)
 	if podList == nil {
 		fmt.Printf("Error while fetching podList for deployment %v.\n", Name)
@@ -105,15 +105,16 @@ func (client *kclient) LabelSpillAndSoakPodsForDeployment(Name string, Namespace
 			ch:        make(chan struct{}),
 		}
 		deployKey := GetMapKey(Name, Namespace)
-		if client.deploymentInformers[deployKey] != nil {
-			prevPodObserver := client.deploymentInformers[deployKey]
+		if client.DeploymentInformers[deployKey] != nil {
+			prevPodObserver := client.DeploymentInformers[deployKey]
 			prevPodObserver.StopObservingPods()
 		}
-		client.deploymentInformers[deployKey] = po
+		client.DeploymentInformers[deployKey] = po
+		fmt.Printf("The deploymentInformers map is %v.\n", client.DeploymentInformers)
 	}
 }
 
-func (client *kclient) LabelSpillAndSoakPodsForService(Name string, Namespace string) {
+func (client *K8sClient) LabelSpillAndSoakPodsForService(Name string, Namespace string) {
 	podList := GetPodsForService(Name, Namespace)
 	if podList == nil {
 		fmt.Printf("Error while fetching podList for service %v.\n", Name)
@@ -137,11 +138,12 @@ func (client *kclient) LabelSpillAndSoakPodsForService(Name string, Namespace st
 			ch:        make(chan struct{}),
 		}
 		serviceKey := GetMapKey(Name, Namespace)
-		if client.deploymentInformers[serviceKey] != nil {
-			prevPodObserver := client.serviceInformers[serviceKey]
+		if client.DeploymentInformers[serviceKey] != nil {
+			prevPodObserver := client.ServiceInformers[serviceKey]
 			prevPodObserver.StopObservingPods()
 		}
-		client.serviceInformers[serviceKey] = po
+		client.ServiceInformers[serviceKey] = po
+		fmt.Printf("The serviceInformers map is %v.\n", client.ServiceInformers)
 	}
 }
 

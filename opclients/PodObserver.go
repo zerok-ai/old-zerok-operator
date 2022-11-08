@@ -20,7 +20,7 @@ type PodObserver struct {
 	target    Target
 	Name      string
 	Namespace string
-	client    *kclient
+	client    *K8sClient
 	ch        chan struct{}
 }
 

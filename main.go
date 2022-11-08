@@ -33,6 +33,7 @@ import (
 
 	operatorv1alpha1 "github.com/zerokdotai/zerok-operator/api/v1alpha1"
 	"github.com/zerokdotai/zerok-operator/controllers"
+	opclients "github.com/zerokdotai/zerok-operator/opclients"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -93,6 +94,10 @@ func main() {
 	if err = (&controllers.ZerokopReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Kclient: &opclients.K8sClient{
+			DeploymentInformers: make(map[string]*opclients.PodObserver),
+			ServiceInformers:    make(map[string]*opclients.PodObserver),
+		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
 		os.Exit(1)
