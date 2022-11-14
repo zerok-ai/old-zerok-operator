@@ -34,6 +34,7 @@ import (
 	operatorv1alpha1 "github.com/zerokdotai/zerok-operator/api/v1alpha1"
 	"github.com/zerokdotai/zerok-operator/controllers"
 	opclients "github.com/zerokdotai/zerok-operator/opclients"
+	resources "github.com/zerokdotai/zerok-operator/resources"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -118,4 +119,8 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+
+	//Setting up operator Apis
+	resources.RegisterUpdateEnvoyAPI()
+
 }
