@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,15 +25,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/zerokdotai/zerok-operator/api/v1alpha1"
-	opclients "github.com/zerokdotai/zerok-operator/opclients"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
 // ZerokopReconciler reconciles a Zerokop object
 type ZerokopReconciler struct {
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Kclient *opclients.K8sClient
+	Client client.Client
+	Scheme *runtime.Scheme
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -55,14 +52,6 @@ type ZerokopReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-
-	zerokop := &operatorv1alpha1.Zerokop{}
-	fmt.Printf("Test2!!! %v\n", zerokop.GetCreationTimestamp())
-	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionTimestamp())
-	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
-	r.Kclient.LabelSpillAndSoakPodsForDeployment("service1-deployment", "default")
-	opclients.ApplyEnvoyConfig()
-	r.Kclient.StartObservingPodsForDeployment("service1-deployment", "default")
 	return ctrl.Result{}, nil
 }
 
