@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -52,6 +53,14 @@ type ZerokopReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	zerokop := &operatorv1alpha1.Zerokop{}
+	err := r.Client.Get(ctx, req.NamespacedName, zerokop)
+	if err != nil {
+		fmt.Printf("Error in getting the zerokop %v.\n", err)
+	} else {
+		fmt.Printf("zerokop size %v.\n", zerokop.Spec.Size)
+		fmt.Printf("zerokop error rules %v\n", zerokop.Spec.ErrorRules)
+	}
 	return ctrl.Result{}, nil
 }
 

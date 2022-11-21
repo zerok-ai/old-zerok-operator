@@ -4,3 +4,6 @@ metadata:
   name: zerokop-sample
 spec:
   size: 3
+  ErrorRules: 
+    - ApplyTo: RESPONSE_CODE
+      code: 525

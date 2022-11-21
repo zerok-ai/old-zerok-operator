@@ -23,13 +23,38 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type Zerokop_ApplyTo int32
+
+const (
+	//Applies the error rule to response code
+	RESPONSE_CODE Zerokop_ApplyTo = 0
+	//Applies the error rule to response body
+	RESPONSE_BODY Zerokop_ApplyTo = 1
+)
+
+var (
+	Zerokop_ApplyTo_name = map[int32]string{
+		0: "RESPONSE_CODE",
+		1: "RESPONSE_BODY",
+	}
+	Zerokop_ApplyTo_value = map[string]int32{
+		"RESPONSE_CODE": 0,
+		"RESPONSE_BODY": 1,
+	}
+)
+
+type ZerokopErrorRule struct {
+	ApplyTo Zerokop_ApplyTo `json:"ApplyTo"`
+	Code    int32           `json:"code"`
+}
+
 // ZerokopSpec defines the desired state of Zerokop
 type ZerokopSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Zerokop. Edit zerokop_types.go to remove/update
 	Size int32 `json:"size"`
+
+	ErrorRules []ZerokopErrorRule `json:"ErrorRules"`
 }
 
 // ZerokopStatus defines the observed state of Zerokop
@@ -44,6 +69,7 @@ type ZerokopStatus struct {
 
 // Zerokop is the Schema for the zerokops API
 // +kubebuilder:subresource:status
+// +genclient:nonNamespaced
 type Zerokop struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
