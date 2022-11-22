@@ -22,7 +22,7 @@ import (
 
 // ZerokopSpec defines the desired state of Zerokop
 type ZerokopSpec struct {
-	http_response_headers_match HttpResponseHeadersMatch `json:"http_response_headers_match"`
+	Http_response_headers_match HttpResponseHeadersMatch `json:"http_response_headers_match"`
 }
 
 // ZerokopStatus defines the observed state of Zerokop

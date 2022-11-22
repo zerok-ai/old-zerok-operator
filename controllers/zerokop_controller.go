@@ -58,8 +58,7 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		fmt.Printf("Error in getting the zerokop %v.\n", err)
 	} else {
-		fmt.Printf("zerokop size %v.\n", zerokop.Spec.Size)
-		fmt.Printf("zerokop error rules %v\n", zerokop.Spec.ErrorRules)
+		fmt.Printf("zerokop spec %v.\n", zerokop.Spec)
 	}
 	return ctrl.Result{}, nil
 }

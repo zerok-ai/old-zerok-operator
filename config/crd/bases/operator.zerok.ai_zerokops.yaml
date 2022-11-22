@@ -35,36 +35,37 @@ spec:
           spec:
             description: ZerokopSpec defines the desired state of Zerokop
             properties:
-              ErrorRules:
-                items:
-                  properties:
-                    ApplyTo:
-                      format: int32
-                      type: integer
-                    Code:
-                      format: int32
-                      type: integer
-                  required:
-                  - ApplyTo
-                  - Code
-                  type: object
-                type: array
-              size:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
-                format: int32
-                type: integer
+              http_response_headers_match:
+                properties:
+                  headers:
+                    items:
+                      properties:
+                        invert_match:
+                          type: boolean
+                        name:
+                          type: string
+                        string_match:
+                          properties:
+                            items:
+                              type: string
+                          required:
+                          - items
+                          type: object
+                      required:
+                      - name
+                      - string_match
+                      type: object
+                    type: array
+                required:
+                - headers
+                type: object
             required:
-            - ErrorRules
-            - size
+            - http_response_headers_match
             type: object
           status:
             description: ZerokopStatus defines the observed state of Zerokop
             properties:
               conditions:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
