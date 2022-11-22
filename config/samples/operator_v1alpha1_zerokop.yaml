@@ -3,7 +3,9 @@ kind: Zerokop
 metadata:
   name: zerokop-sample
 spec:
-  size: 3
-  ErrorRules: 
-    - ApplyTo: RESPONSE_CODE
-      code: 525
+  http_response_headers_match: 
+    headers:
+    - name: ":status"
+      string_match:
+        exact: "200"
+      invert_match: true
