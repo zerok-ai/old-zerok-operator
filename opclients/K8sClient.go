@@ -59,7 +59,7 @@ func PrintPodsInCluster() {
 
 				_, updateErr := k8sClient.Pods(pod.GetNamespace()).Patch(context.Background(), pod.GetName(), types.JSONPatchType, payloadBytes, metav1.PatchOptions{})
 				if updateErr == nil {
-					fmt.Println(fmt.Sprintf("Pod %s labelled successfully.", pod.GetName()))
+					fmt.Printf("Pod %s labelled successfully.\n", pod.GetName())
 				} else {
 					fmt.Println(updateErr)
 				}

@@ -1,7 +1,7 @@
 package v1alpha1
 
 type StringMatch struct {
-	Exact string `json:"items"`
+	Exact string `json:"exact"`
 }
 
 type HeaderMatch struct {

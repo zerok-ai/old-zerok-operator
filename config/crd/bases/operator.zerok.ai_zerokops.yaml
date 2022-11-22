@@ -46,10 +46,10 @@ spec:
                           type: string
                         string_match:
                           properties:
-                            items:
+                            exact:
                               type: string
                           required:
-                          - items
+                          - exact
                           type: object
                       required:
                       - name

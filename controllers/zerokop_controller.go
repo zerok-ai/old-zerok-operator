@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/zerokdotai/zerok-operator/api/v1alpha1"
+	opclients "github.com/zerokdotai/zerok-operator/opclients"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -60,6 +61,7 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	} else {
 		fmt.Printf("zerokop spec %v.\n", zerokop.Spec)
 	}
+	opclients.ApplyEnvoyConfig(zerokop.Spec)
 	return ctrl.Result{}, nil
 }
 
