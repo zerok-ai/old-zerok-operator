@@ -43,46 +43,56 @@ func GetErrorRuleCrd(zerokopSpec operatorv1alpha1.ZerokopSpec) *v1alpha3.EnvoyFi
 	return envoyFilterCrd
 }
 
+func CreateHeadersCrd(zerokspec operatorv1alpha1.ZerokopSpec) []*structpb.Value {
+	headers_spec := zerokspec.Http_response_headers_match.Headers
+	headers_envoy := []*structpb.Value{}
+	for i := 0; i < len(headers_spec); i++ {
+		header_spec := headers_spec[i]
+		string_match := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"exact": {
+					Kind: &structpb.Value_StringValue{
+						StringValue: header_spec.String_match.Exact,
+					},
+				},
+			},
+		}
+		header_envoy := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"name": {
+					Kind: &structpb.Value_StringValue{
+						StringValue: header_spec.Name,
+					},
+				},
+				"string_match": {
+					Kind: &structpb.Value_StructValue{
+						StructValue: string_match,
+					},
+				},
+				"invert": {
+					Kind: &structpb.Value_BoolValue{
+						BoolValue: header_spec.Invert_match,
+					},
+				},
+			},
+		}
+		header_envoy_value := &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: header_envoy,
+			},
+		}
+		headers_envoy = append(headers_envoy, header_envoy_value)
+	}
+	return headers_envoy
+}
+
 func GetFailedRequestValue(zerokopSpec operatorv1alpha1.ZerokopSpec) *structpb.Struct {
-	string_match := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"exact": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: "200",
-				},
-			},
-		},
-	}
-	header := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{
-					StringValue: ":status",
-				},
-			},
-			"string_match": {
-				Kind: &structpb.Value_StructValue{
-					StructValue: string_match,
-				},
-			},
-			"invert": {
-				Kind: &structpb.Value_BoolValue{
-					BoolValue: true,
-				},
-			},
-		},
-	}
-	headerValue := &structpb.Value{
-		Kind: &structpb.Value_StructValue{
-			StructValue: header,
-		},
-	}
 	headersMatch := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"headers": {
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{headerValue},
+						Values: CreateHeadersCrd(zerokopSpec),
 					},
 				},
 			},
